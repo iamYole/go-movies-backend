@@ -1,2 +1,5 @@
 .air.toml
 /tmp
+/postgres-data
+/sql
+.DS_Store

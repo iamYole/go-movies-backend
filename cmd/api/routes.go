@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/iamYole/go-movies/internal/env"
 )
 
 func (app *application) routes() http.Handler {
@@ -14,7 +15,7 @@ func (app *application) routes() http.Handler {
 
 	mux.Use(middleware.Recoverer)
 	mux.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"http://localhost:3000"}, // Use this to allow specific origin hosts
+		AllowedOrigins: []string{env.GetString("FRONTEND_URL", "http://localhost:3000")}, // Use this to allow specific origin hosts
 		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},

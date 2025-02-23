@@ -1,12 +1,7 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"time"
-
-	"github.com/iamYole/go-movies/internal/models"
 )
 
 func (app *application) Home(w http.ResponseWriter, r *http.Request) {
@@ -20,54 +15,22 @@ func (app *application) Home(w http.ResponseWriter, r *http.Request) {
 		Version: "1.0.0",
 	}
 
-	out, err := json.Marshal(payLoad)
+	err := app.WriteJSON(w, http.StatusOK, payLoad)
 	if err != nil {
-		fmt.Println(err)
-		return
+		app.WriteJSONError(w, err, http.StatusInternalServerError)
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(out)
 }
 
 func (app *application) AllMovies(w http.ResponseWriter, r *http.Request) {
-	var movies []models.Movie
-
-	rd, _ := time.Parse("2006-01-02", "1986-03-07")
-	highlander := models.Movie{
-		ID:          1,
-		Title:       "Highlander",
-		ReleaseDate: rd,
-		MPAARating:  "R",
-		Runtime:     116,
-		Description: "A very nice movie",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-	movies = append(movies, highlander)
-
-	rd, _ = time.Parse("2006-01-02", "1981-06-12")
-	rotla := models.Movie{
-		ID:          2,
-		Title:       "Raiders of the Lost Ark",
-		ReleaseDate: rd,
-		MPAARating:  "PG-13",
-		Runtime:     115,
-		Description: "Another very nice movie",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-	movies = append(movies, rotla)
-
-	out, err := json.Marshal(movies)
+	movies, err := app.repo.Movies.GetMovies(r.Context())
 	if err != nil {
-		fmt.Println(err)
+		app.WriteJSONError(w, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(out)
+	err = app.WriteJSON(w, http.StatusOK, movies)
+	if err != nil {
+		app.WriteJSONError(w, err, http.StatusInternalServerError)
+	}
 
 }
