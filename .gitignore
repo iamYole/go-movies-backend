@@ -3,3 +3,4 @@
 /postgres-data
 /sql
 .DS_Store
+.envrc

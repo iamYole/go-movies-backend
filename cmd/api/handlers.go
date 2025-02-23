@@ -34,3 +34,23 @@ func (app *application) AllMovies(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
+func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
+	//read JSON payload
+	//validate user against the database
+	//create jwtuser
+	u := jwtUser{
+		ID:        1,
+		FirstName: "admin",
+		LastName:  "user",
+	}
+
+	//generate tokens
+	tokens, err := app.auth.GeneratToken(&u)
+	if err != nil {
+		app.WriteJSONError(w, err)
+		return
+	}
+
+	app.WriteJSON(w, http.StatusCreated, tokens.Token)
+}
