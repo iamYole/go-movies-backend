@@ -12,10 +12,15 @@ type Repository struct {
 		GetMovies(context.Context) ([]*models.Movie, error)
 		GetMovieByID(context.Context, int64) (models.Movie, error)
 	}
+	Users interface {
+		GetUserByEmail(context.Context, string) (*models.User, error)
+		CreateUser(context.Context, models.User) error
+	}
 }
 
 func NewDbConn(db *sql.DB) Repository {
 	return Repository{
 		Movies: &models.MovieRepo{DB: db},
+		Users:  &models.UserRepo{DB: db},
 	}
 }
