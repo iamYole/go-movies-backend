@@ -26,8 +26,18 @@ func (app *application) routes() http.Handler {
 
 	mux.Get("/", app.Home)
 	mux.Get("/movies", app.AllMovies)
+
 	mux.Post("/authenticate", app.authenticate)
+	mux.Get("/refresh",app.refreshToken)
+	mux.Get("/logout",app.logout)
+
 	mux.Post("/register", app.Register)
+
+	mux.Route("/admin",func(r chi.Router) {
+		r.Use(app.authRequired)
+
+		r.Get("/movies", app.MovieCatalog)
+	})
 
 	return mux
 }

@@ -95,3 +95,31 @@ func (u *UserRepo) CreateUser(ctx context.Context, user User) error {
 
 	return nil
 }
+
+func (u *UserRepo) GetUserByID(ctx context.Context, userID int64)(*User, error){
+	var user User
+	qry := `select 
+				u.id ,u.first_name,u.last_name t_name,u.email ,
+				u."password" ,u.created_at ,u.updated_at  
+			from users u
+			where u.id=$1;`
+
+	ctx, cancel := context.WithTimeout(ctx, db.QueryTimeoutDuration)
+	defer cancel()
+
+	row := u.DB.QueryRowContext(ctx,qry,userID)
+	err := row.Scan(
+		&user.ID,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.Password.hash,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err!=nil{
+		return nil,err
+	}
+	return &user,nil
+}
