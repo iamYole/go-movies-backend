@@ -198,4 +198,5 @@ func (app *application) generateAndSendToken(w http.ResponseWriter, user *models
 func(app *application) logout(w http.ResponseWriter, r *http.Request){
 	http.SetCookie(w,app.auth.GetExpiredRefereshToken())
 	w.WriteHeader(http.StatusAccepted)
+	app.WriteJSON(w, http.StatusCreated, tokens.Token)
 }
