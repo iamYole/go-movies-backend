@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/iamYole/go-movies/internal/models"
 )
@@ -134,6 +135,53 @@ func (app *application) MovieCatalog(w http.ResponseWriter, r *http.Request){
 		app.WriteJSONError(w, err, http.StatusInternalServerError)
 	}
 }
+
+func (app *application) GetMovieHandler(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.WriteJSONError(w, err)
+		return
+	}
+
+	movie, err := app.repo.Movies.GetMovieByID(r.Context(),int64(movieID))
+	if err != nil {
+		app.WriteJSONError(w, err)
+		return
+	}
+
+	if err := app.WriteJSON(w, http.StatusOK, movie); err!=nil{
+		app.WriteJSONError(w,err,http.StatusInternalServerError)
+	}
+}
+
+func (app *application) EditMovieHandler(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.WriteJSONError(w, err)
+		return
+	}
+
+	movie, genres, err := app.repo.Movies.EditMovie(r.Context(), int64(movieID))
+	if err != nil {
+		app.WriteJSONError(w, err)
+		return
+	}
+
+	var payload = struct {
+		Movie  *models.Movie   `json:"movie"`
+		Genres []*models.Genre `json:"genres"`
+	}{
+		movie,
+		genres,
+	}
+
+	if err := app.WriteJSON(w, http.StatusOK, payload);err !=nil{
+		app.WriteJSONError(w,err,http.StatusInternalServerError)
+	}
+}
+
 
 func (app *application)refreshToken(w http.ResponseWriter, r *http.Request){
 	for _, cookie := range r.Cookies(){

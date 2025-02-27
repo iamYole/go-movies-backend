@@ -10,7 +10,8 @@ import (
 type Repository struct {
 	Movies interface {
 		GetMovies(context.Context) ([]*models.Movie, error)
-		GetMovieByID(context.Context, int64) (models.Movie, error)
+		GetMovieByID(context.Context, int64) (*models.Movie, error)
+		EditMovie(context.Context, int64) (*models.Movie,[]*models.Genre, error)
 	}
 	Users interface {
 		GetUserByEmail(context.Context, string) (*models.User, error)
