@@ -18,6 +18,11 @@ type application struct {
 	cfg    config
 	repo   repository.Repository
 	auth   Authentication
+	imdb imdb_config
+}
+type imdb_config struct{
+	API_KEY string
+	search_url string
 }
 type config struct {
 	port    int
@@ -75,6 +80,10 @@ func main() {
 			CookiePath:    "/",
 			CookieName:    env.GetString("COOKIE_NAME", "__HOST-referesh_teken"),
 			CookieDomain:  cfg.authCfg.CookieDomain,
+		},
+		imdb: imdb_config{
+			API_KEY: env.GetString("IMDB_API_KEY","12345"),
+			search_url: env.GetString("SEARCH_URL","url"),
 		},
 	}
 

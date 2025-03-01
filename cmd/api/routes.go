@@ -26,6 +26,7 @@ func (app *application) routes() http.Handler {
 
 	mux.Get("/", app.Home)
 	mux.Get("/movies", app.AllMovies)
+	mux.Get("/genres",app.GetAllGenresHandle)
 	mux.Get("/movies/{id}",app.GetMovieHandler)
 	mux.Get("/authenticate", app.authenticate)
 	
@@ -40,6 +41,7 @@ func (app *application) routes() http.Handler {
 		
 		r.Get("/movies", app.MovieCatalog)
 		r.Get("/movies/{id}",app.EditMovieHandler)
+		r.Put("/movies/0", app.InsertMovieHandler)
 	})
 
 	return mux

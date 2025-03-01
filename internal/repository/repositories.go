@@ -12,6 +12,9 @@ type Repository struct {
 		GetMovies(context.Context) ([]*models.Movie, error)
 		GetMovieByID(context.Context, int64) (*models.Movie, error)
 		EditMovie(context.Context, int64) (*models.Movie,[]*models.Genre, error)
+		GetAllGenres(context.Context)([]*models.Genre, error)
+		InsertMovie(context.Context, models.Movie)(int64, error)
+		UpdateMovieGenres(ctx context.Context, id int, genreIDs []int) error
 	}
 	Users interface {
 		GetUserByEmail(context.Context, string) (*models.User, error)

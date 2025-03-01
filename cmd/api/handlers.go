@@ -1,14 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/iamYole/go-movies/internal/models"
+	//"github.com/iamYole/go-movies/internal/models"
 )
 
 func (app *application) Home(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +35,7 @@ func (app *application) Home(w http.ResponseWriter, r *http.Request) {
 func (app *application) AllMovies(w http.ResponseWriter, r *http.Request) {
 	movies, err := app.repo.Movies.GetMovies(r.Context())
 	if err != nil {
-		app.WriteJSONError(w, err)
+		app.WriteJSONError(w, err,http.StatusInternalServerError)
 		return
 	}
 
@@ -40,6 +44,19 @@ func (app *application) AllMovies(w http.ResponseWriter, r *http.Request) {
 		app.WriteJSONError(w, err, http.StatusInternalServerError)
 	}
 
+}
+
+func (app *application) GetAllGenresHandle(w http.ResponseWriter, r *http.Request){
+	genres, err := app.repo.Movies.GetAllGenres(r.Context())
+	if err!=nil{
+		app.WriteJSONError(w,err,http.StatusInternalServerError)
+		return
+	}
+
+	if err := app.WriteJSON(w,http.StatusOK,genres);err!=nil{
+		app.WriteJSONError(w,err,http.StatusInternalServerError)
+		return
+	}
 }
 
 func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
@@ -119,6 +136,53 @@ func (app *application) Register(w http.ResponseWriter, r *http.Request) {
 
 	if err := app.WriteJSON(w, http.StatusCreated, tokens.Token); err != nil {
 		app.WriteJSONError(w, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+// type MoviePayload struct{
+// 	//ID          int       `json:"id" validate:"required"`
+// 	Title       string    `json:"title" validate:"required"`
+// 	ReleaseDate time.Time `json:"release_date" validate:"required"`
+// 	Runtime     int       `json:"runtime" validate:"required"`
+// 	MPAARating  string    `json:"mpaa_rating" validate:"required"`
+// 	Description string    `json:"description" validate:"required"`
+// 	Image       string    `json:"image" validate:"required"`
+// 	//CreatedAt   time.Time `json:"-" validate:"required"`
+// 	//UpdatedAt   time.Time `json:"-"`
+// 	//Genres      []int  `json:"genres,validate:"required"`
+// 	GenresArray []int     `json:"genres_array,omitempty"`
+// }
+func (app *application) InsertMovieHandler(w http.ResponseWriter, r *http.Request){
+	var movie models.Movie
+
+	if err:= app.ReadJSON(w,r,&movie);err!=nil{
+		app.WriteJSONError(w,err)
+		return
+	}
+
+	// get image
+	movie = app.getPoster(movie)
+
+	newID,err := app.repo.Movies.InsertMovie(r.Context(),movie)
+	if err!=nil{
+		app.WriteJSONError(w,err,http.StatusInternalServerError)
+		return
+	}
+
+	//handle genre
+	err = app.repo.Movies.UpdateMovieGenres(r.Context(),int(newID),movie.GenresArray)
+	if err!=nil{
+		app.WriteJSONError(w,err,http.StatusInternalServerError)
+		return
+	}
+
+	res := JSONResponse{
+		Error: false,
+		Message: "Movie Added",
+	}
+	if err:=app.WriteJSON(w,http.StatusCreated,res);err!=nil{
+		app.WriteJSONError(w,err,http.StatusInternalServerError)
 		return
 	}
 }
@@ -246,4 +310,49 @@ func (app *application) generateAndSendToken(w http.ResponseWriter, user *models
 func(app *application) logout(w http.ResponseWriter, r *http.Request){
 	http.SetCookie(w,app.auth.GetExpiredRefereshToken())
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func (app *application)getPoster(movie models.Movie)models.Movie{
+	type TheMovieDB struct{
+		Page int `json:"page"`
+		Results []struct{
+			PosterPath string `json:"poster_path"`
+		}`json:"results"`
+		TotalPages int `json:"total_pages"`
+	}
+
+	client := &http.Client{}
+	theURL := app.imdb.search_url
+
+	req, err := http.NewRequest("GET",theURL+"&query="+url.QueryEscape(movie.Title),nil)
+	if err!=nil{
+		//log.Println(theURL+"&query="+url.QueryEscape(movie.Title))
+		log.Println(err)
+		return movie
+	}
+
+	req.Header.Add("Accept","application/json")
+	req.Header.Add("Content-Type","application/json")
+
+	res, err := client.Do(req)
+	if err!=nil{
+		log.Println(err)
+		return movie
+	}
+	defer res.Body.Close()
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err!=nil{
+		log.Println(err)
+		return movie
+	}
+
+	var responseObj TheMovieDB
+	json.Unmarshal(bodyBytes,&responseObj)
+
+	if len(responseObj.Results) > 0{
+		movie.Image = responseObj.Results[0].PosterPath
+	}
+
+	return movie
 }

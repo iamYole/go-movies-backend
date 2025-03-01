@@ -81,13 +81,13 @@ func (u *UserRepo) GetUserByEmail(ctx context.Context, email string) (*User, err
 }
 
 func (u *UserRepo) CreateUser(ctx context.Context, user User) error {
-	qry := `insert into users (first_name, last_name, email,password,created_at, updated_at)
+	stmt := `insert into users (first_name, last_name, email,password,created_at, updated_at)
 			values($1,$2,$3,$4,$5,$6) RETURNING id, created_at;`
 
 	ctx, cancel := context.WithTimeout(ctx, db.QueryTimeoutDuration)
 	defer cancel()
 
-	err := u.DB.QueryRowContext(ctx, qry, user.FirstName,
+	err := u.DB.QueryRowContext(ctx, stmt, user.FirstName,
 		user.LastName, user.Email, user.Password.hash, time.Now(), time.Now()).Scan(&user.ID, &user.CreatedAt)
 	if err != nil {
 		return err

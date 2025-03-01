@@ -34,6 +34,45 @@ type MovieRepo struct {
 	DB *sql.DB
 }
 
+func (m *MovieRepo) InsertMovie(ctx context.Context, movie Movie)(int64, error){
+	stmt := `insert into movies 
+				(title,release_date,runtime,mpaa_rating,description,image,created_at,updated_at)
+			values($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, created_at;`
+
+	ctx, cancel := context.WithTimeout(ctx, db.QueryTimeoutDuration)
+	defer cancel()
+
+	err:= m.DB.QueryRowContext(ctx,stmt,movie.Title,movie.ReleaseDate,movie.Runtime,movie.MPAARating,
+					movie.Description,movie.Image,time.Now(),time.Now()).Scan(&movie.ID,&movie.CreatedAt)
+	if err!=nil{
+		return 0,err
+	}
+
+	return int64(movie.ID), nil
+}
+
+func (m *MovieRepo) UpdateMovieGenres(ctx context.Context, id int, genreIDs []int) error{
+	ctx, cancel := context.WithTimeout(ctx, db.QueryTimeoutDuration)
+	defer cancel()
+
+	stmt := `delete from movies_genres where movie_id = $1`
+
+	_, err := m.DB.ExecContext(ctx, stmt, id)
+	if err != nil {
+		return err
+	}
+
+	for _, n := range genreIDs {
+		stmt := `insert into movies_genres (movie_id, genre_id) values ($1, $2)`
+		_, err := m.DB.ExecContext(ctx, stmt, id, n)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (m *MovieRepo) GetMovies(ctx context.Context) ([]*Movie, error) {
 	var movies []*Movie
 	qry := `select 
@@ -212,5 +251,40 @@ func (m *MovieRepo) EditMovie(ctx context.Context, movieID int64) (*Movie, []*Ge
 	}
 
 	return &movie, allGenres, nil
+}
+
+func (m *MovieRepo) GetAllGenres(ctx context.Context)([]*Genre, error){
+	qry := `select g.id ,g.genre ,g.created_at ,g.updated_at
+		    from genres g
+			order by g.genre;`
+
+	ctx, cancel := context.WithTimeout(ctx, db.QueryTimeoutDuration)
+	defer cancel()
+
+	rows,err := m.DB.QueryContext(ctx,qry)
+	if err!=nil{
+		return nil,err
+	}
+	defer rows.Close()
+
+	var genres []*Genre
+
+	for rows.Next(){
+		var g Genre
+		err:= rows.Scan(
+			&g.ID,
+			&g.Genre,
+			&g.CreatedAt,
+			&g.UpdatedAt,
+		)
+		if err!=nil{
+			return nil,err
+		}
+
+		genres = append(genres,&g)
+		
+	}
+	return genres, nil
+
 }
 
